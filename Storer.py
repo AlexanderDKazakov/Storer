@@ -2,12 +2,13 @@ import os
 import pickle
 
 class Storer:
-    def __init__(self, name4file=None, path4dumbs=None, internal_name=None ):
-        __version__ = "0.0.3"
+    def __init__(self, name4file=None, path4dumbs=None, internal_name=None, verbose=True):
+        __version__ = "0.0.4 [12]"
         self.internal_name = "[Storer]"
         self.name4file = "noname.pkl"
         self.path4dumbs = os.path.expanduser(os.path.dirname(__file__))
         self.data = dict()
+        self.verbose = verbose
 
         if internal_name: self.internal_name = "[" + str(internal_name) + "]"
         if name4file: self.name4file = str(name4file)
@@ -16,6 +17,7 @@ class Storer:
             if self.path4dumbs[-1] != "/": self.path4dumbs += "/"
             self.path4dumbs = os.path.expanduser(self.path4dumbs)
             os.makedirs(self.path4dumbs, exist_ok=True)
+        if self.verbose: print(f"[Storer v.{__version__ }] is initialized!")
 
     def put(self, what=None, name: str = None) -> None:
         self.data[name] = what
@@ -25,17 +27,17 @@ class Storer:
         else: return False
 
     def dumb(self):
-        print(self.internal_name, self.path4dumbs + self.name4file + " dumping...")
+        if self.verbose: print(self.internal_name, self.path4dumbs + self.name4file + " dumping...")
         with open(self.path4dumbs + self.name4file, 'wb') as f:
             pickle.dump(self.data, f)
 
     def load(self):
-        print(self.internal_name, self.path4dumbs + self.name4file + " loading...")
+        if self.verbose: print(self.internal_name, self.path4dumbs + self.name4file + " loading...")
         if os.path.exists(self.path4dumbs + self.name4file):
             with open(self.path4dumbs + self.name4file, 'rb') as f:
                      self.data = pickle.load(f)
         else:
-            print(self.internal_name, "No data is available for loading...")
+            if self.verbose: print(self.internal_name, "No data is available for loading...")
         return self.data
 
     def show(self, get_string = False):
@@ -55,7 +57,7 @@ if __name__ == "__main__":
     s.dumb()
 
     print("\n Now we creating new storer instance...\n")
-    s1 = Storer(internal_name="Storer1", path4dumbs='./test')
+    s1 = Storer(internal_name="Storer1", path4dumbs='./test', verbose=False)
     s1.load()
     s1.show()
 
