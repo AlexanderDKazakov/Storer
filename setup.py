@@ -2,13 +2,13 @@ from distutils.core import setup
 setup(
   name = 'Storer',
   packages = ['Storer'],
-  version = '0.6',
+  version = '0.7',
   license='MIT',
   description = 'Minimalist storage class for any purpose.',
   author = 'Alexander Kazakov',
   author_email = 'alexander.d.kazakov@gmail.com',
   url = 'https://github.com/AlexanderDKazakov/Storer',
-  download_url = 'https://github.com/AlexanderDKazakov/Storer/archive/v0.6.tar.gz',    # I explain this later on
+  download_url = 'https://github.com/AlexanderDKazakov/Storer/archive/v0.7.tar.gz',
   keywords = ['store', 'pickle'],
   install_requires=[
           '',

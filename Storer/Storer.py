@@ -3,7 +3,7 @@ import pickle
 
 class Storer:
     def __init__(self, name4file=None, path4dumbs=None, internal_name=None, verbose=True):
-        __version__ = "0.0.6 [13]"
+        __version__ = "0.0.7 [13]"
         self.internal_name = "[Storer]"
         self.name4file = "noname.pkl"
         self.path4dumbs = os.path.expanduser(os.path.dirname(__file__))
