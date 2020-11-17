@@ -7,7 +7,14 @@
 
 Minimalist storage class for any purpose. Created for internal needs. Feel free to use it and contribute (see [contribution section](#12-contribution)).
 
+
+
 ## 1.1. Usage
+
+Installation:
+`
+pip install Storer
+`
 
 Easy to use.
 
@@ -32,3 +39,8 @@ Feel free to contribute to the project, but please create initially an issue wit
 
  - extend file formats for storing
  - ...
+
+## License
+----
+
+MIT
