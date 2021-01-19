@@ -4,6 +4,7 @@
   - [1.1. Usage](#11-usage)
   - [1.2. Contribution](#12-contribution)
   - [Future](#future)
+  - [## License](#-license)
 
 Minimalist storage class for any purpose. Created for internal needs. Feel free to use it and contribute (see [contribution section](#12-contribution)).
 
