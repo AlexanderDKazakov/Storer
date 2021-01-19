@@ -23,7 +23,8 @@ class Storer:
         if self.verbose: print(f"[Storer v.{self.__version__ }] is initialized!")
         if self.path_dumps == Path(os.path.expanduser(os.path.dirname(__file__))) or self.path_dumps == "." :
             self.path_dumps = Path(os.path.expanduser(os.path.dirname(__file__))) / "data"
-        else: self.path_dumps = Path(self.path_dumps)
+        else: 
+            self.path_dumps = Path(os.path.expanduser(self.path_dumps))
 
         if self.verbose: print(f"Dump folder: [{self.path_dumps}]")
         os.makedirs(self.path_dumps, exist_ok=True)
