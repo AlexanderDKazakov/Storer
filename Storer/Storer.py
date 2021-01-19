@@ -1,63 +1,116 @@
+from dataclasses import dataclass, field
+from pathlib import Path
 import os
 import pickle
+import shutil
+import bz2
+from typing import Any
 
+@dataclass
 class Storer:
-    def __init__(self, name4file=None, path4dumbs=None, internal_name=None, verbose=True):
-        __version__ = "0.0.7 [13]"
-        self.internal_name = "[Storer]"
-        self.name4file = "noname.pkl"
-        self.path4dumbs = os.path.expanduser(os.path.dirname(__file__))
-        self.data = dict()
-        self.verbose = verbose
+    __version__ = "0.9.0 [20]"
+    internal_name:  str  = "[Storer]"
+    dump_name:      str  = "noname"
+    path_dumps:     str  = Path(os.path.expanduser(os.path.dirname(__file__)))
+    verbose:        bool = False
+    data:           dict = field(default_factory=dict)
+    default_dir:    str  = "data"
+    compressed:     bool = True
+    _backup_dir:    str  = "backup"
+    _backup_list:   list = field(default_factory=list)
 
-        if internal_name: self.internal_name = "[" + str(internal_name) + "]"
-        if name4file: self.name4file = str(name4file)
-        if path4dumbs:
-            self.path4dumbs = str(path4dumbs)
-            if self.path4dumbs[-1] != "/": self.path4dumbs += "/"
-            self.path4dumbs = os.path.expanduser(self.path4dumbs)
-            os.makedirs(self.path4dumbs, exist_ok=True)
-        if self.verbose: print(f"[Storer v.{__version__ }] is initialized!")
+    def __post_init__(self):
+        if self.verbose: print(f"[Storer v.{self.__version__ }] is initialized!")
+        if self.path_dumps == Path(os.path.expanduser(os.path.dirname(__file__))) or self.path_dumps == "." :
+            self.path_dumps = Path(os.path.expanduser(os.path.dirname(__file__))) / "data"
+        else: self.path_dumps = Path(self.path_dumps)
+
+        if self.verbose: print(f"Dump folder: [{self.path_dumps}]")
+        os.makedirs(self.path_dumps, exist_ok=True)
+        self.initialization()  # creating _backup_list
+    
+    def initialization(self:object) -> None:
+        """ Splitting project """
+        self._backup_list = [p for p in self.path_dumps.iterdir() if p.is_file()]
 
     def put(self, what=None, name: str = None) -> None:
         self.data[name] = what
 
-    def get(self, name: str = None):
+    def get(self, name: str = None) -> Any :
+        """
+        Get an item from
+        """
         if name in self.data: return self.data[name]
-        else: return False
-
-    def dumb(self):
-        if self.verbose: print(self.internal_name, self.path4dumbs + self.name4file + " dumping...")
-        with open(self.path4dumbs + self.name4file, 'wb') as f:
-            pickle.dump(self.data, f)
-
-    def load(self):
-        if self.verbose: print(self.internal_name, self.path4dumbs + self.name4file + " loading...")
-        if os.path.exists(self.path4dumbs + self.name4file):
-            with open(self.path4dumbs + self.name4file, 'rb') as f:
-                     self.data = pickle.load(f)
         else:
-            if self.verbose: print(self.internal_name, "No data is available for loading...")
+            # no data in current data dict
+            # loading it from backup
+            self.load()
+            # try to give the item again if not return False
+            if name in self.data: return self.data[name]
+            else: return False
+
+    def dump(self:object, backup:bool = False) -> None:
+        if backup: path_dumps = self.path_dumps / self._backup_dir
+        else:      path_dumps = self.path_dumps
+                    
+        if self.verbose: print(self.internal_name, self.path_dumps, self.dump_name, "dumping...")
+        
+        if not self.compressed:
+            with open(path_dumps / (self.dump_name + ".pkl"), 'wb') as f: pickle.dump(self.data, f)
+        else:
+            with bz2.BZ2File(path_dumps / (self.dump_name + ".pbz2"), 'wb') as f: pickle.dump(self.data, f)
+
+    def load(self:object) -> None:
+        if self.verbose: print(self.internal_name, self.path_dumps,  "loading...")
+        
+        if not self.compressed:
+            if os.path.exists(self.path_dumps / (self.dump_name + ".pkl") ):
+                with open(self.path_dumps / (self.dump_name + ".pkl"), 'rb') as f: self.data = pickle.load(f)
+            else:
+                if self.verbose: print(self.internal_name, "No data is available for loading...")
+        else:
+            if os.path.exists(self.path_dumps / (self.dump_name + ".pbz2") ):
+                with open(self.path_dumps / (self.dump_name + ".pbz2"), 'rb') as f: 
+                    data = bz2.BZ2File(f, 'rb'); self.data = pickle.load(data)
+            else:
+                if self.verbose: print(self.internal_name, "No data is available for loading...")
         return self.data
 
-    def show(self, get_string = False):
+    def show(self, get_string = False) -> Any:
         string = ""
         for name in self.data:
             string += "key: {0:10} | value:  {1:4}; ".format(name, str(self.data[name]))
         if get_string: return string
         else: print(string)
+    
+    def backup(self:object) -> None:
+        """
+        Backuping the current dump_name in separate folder [<path_dumps> / backup ]
+        """
+        if self.verbose: print(f"Backup...")
+        os.makedirs(self.path_dumps / self._backup_dir, exist_ok=True)
+        self.dump(backup=True)
+
+    def _cleanup(self:object) -> None:
+        """
+        Cleanup the path_dumps directory fully: including all folders and files. 
+        Assuming the folder is used only for Storer purposes.
+        """
+        if self.verbose: print(f"Cleaning...[{self.path_dumps}]")
+        shutil.rmtree(self.path_dumps)
+        
 
 if __name__ == "__main__":
-    s = Storer(path4dumbs='./test')
+    s = Storer(path_dumps=".")
     s.put(what="string", name="mystring")
     s.put(what=1, name="myint")
-    s.put(what=[i for i in range(10)], name="myrange")
+    s.put(what=[i for i in range(10)],     name="myrange")
     s.put(what={v:v*2 for v in range(10)}, name="mydict")
     s.show()
-    s.dumb()
+    s.dump()
 
     print("\n Now we creating new storer instance...\n")
-    s1 = Storer(internal_name="Storer1", path4dumbs='./test', verbose=False)
+    s1 = Storer(path_dumps=".", verbose=False)
     s1.load()
     s1.show()
 
