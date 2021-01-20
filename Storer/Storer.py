@@ -1,14 +1,13 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 import os
-import pickle
 import shutil
-import bz2
 from typing import Any
+from compressor.Compressor import Compressor
 
 @dataclass
 class Storer:
-    __version__ = "0.9.0 [20]"
+    __version__ = "0.9.4 [23]"
     internal_name:  str  = "[Storer]"
     dump_name:      str  = "noname"
     path_dumps:     str  = Path(os.path.expanduser(os.path.dirname(__file__)))
@@ -16,11 +15,17 @@ class Storer:
     data:           dict = field(default_factory=dict)
     default_dir:    str  = "data"
     compressed:     bool = True
+    separations:    int  = int(1e6)
     _backup_dir:    str  = "backup"
     _backup_list:   list = field(default_factory=list)
+    _put_counter:   int  = 0
+    _dump_counter:  int  = 0
+    _dump_name:     str  = None
+    _extension:     str  = None
 
     def __post_init__(self):
-        if self.verbose: print(f"[Storer v.{self.__version__ }] is initialized!")
+        if self.verbose: print(f"[Storer v.{Storer.__version__ }] is initialized!")
+        self._dump_name = self.dump_name
         if self.path_dumps == Path(os.path.expanduser(os.path.dirname(__file__))) or self.path_dumps == "." :
             self.path_dumps = Path(os.path.expanduser(os.path.dirname(__file__))) / "data"
         else: 
@@ -28,53 +33,63 @@ class Storer:
 
         if self.verbose: print(f"Dump folder: [{self.path_dumps}]")
         os.makedirs(self.path_dumps, exist_ok=True)
+        self._extension = ".pbz2" if self.compressed else ".pkl"
         self.initialization()  # creating _backup_list
+        self.compressor = Compressor(compressed=self.compressed)
+    
+    def _get_priv_dump_name(self) -> None:
+        self.dump_name      = self._dump_name + "_" + str(self._dump_counter)
+        self._dump_counter -= 1
+        if self._dump_counter < 0: self._dump_counter = 0
+    
+    def _get_next_dump_name(self) -> None:
+        self.dump_name      = self._dump_name + "_" + str(self._dump_counter)
+        self._dump_counter += 1
     
     def initialization(self:object) -> None:
         """ Splitting project """
         self._backup_list = [p for p in self.path_dumps.iterdir() if p.is_file()]
+        self.backup_list = []
+        if self.verbose: print("[backups] Found: ")
+        for path_fname in self._backup_list:
+            fname = str(path_fname.name).split(self._extension)[0]
+            if self.verbose: print("--> ", path_fname)
+            self.backup_list.append(fname)
+        if len(self.backup_list) == 0: self.backup_list.append(self.dump_name)
 
     def put(self, what=None, name: str = None) -> None:
-        self.data[name] = what
+        self.data[name]   = what
+        self._put_counter+=1
+        if self._put_counter >= self.separations: 
+            self.dump()
+            self._get_next_dump_name()
+            self._put_counter   = 0
 
     def get(self, name: str = None) -> Any :
         """
-        Get an item from
+        Get an item from dump[s]
         """
         if name in self.data: return self.data[name]
-        else:
-            # no data in current data dict
-            # loading it from backup
-            self.load()
-            # try to give the item again if not return False
+        for dump_name in self.backup_list:
+            self.load(dump_name=str(dump_name))
             if name in self.data: return self.data[name]
-            else: return False
+        return False
 
     def dump(self:object, backup:bool = False) -> None:
         if backup: path_dumps = self.path_dumps / self._backup_dir
         else:      path_dumps = self.path_dumps
                     
         if self.verbose: print(self.internal_name, self.path_dumps, self.dump_name, "dumping...")
-        
-        if not self.compressed:
-            with open(path_dumps / (self.dump_name + ".pkl"), 'wb') as f: pickle.dump(self.data, f)
-        else:
-            with bz2.BZ2File(path_dumps / (self.dump_name + ".pbz2"), 'wb') as f: pickle.dump(self.data, f)
+        self.compressor.dump(path_dumps=path_dumps, dump_name=self.dump_name, data=self.data)
+        if not backup: self.data = dict()
 
-    def load(self:object) -> None:
-        if self.verbose: print(self.internal_name, self.path_dumps,  "loading...")
+    def load(self:object, dump_name:str = None) -> None:
         
-        if not self.compressed:
-            if os.path.exists(self.path_dumps / (self.dump_name + ".pkl") ):
-                with open(self.path_dumps / (self.dump_name + ".pkl"), 'rb') as f: self.data = pickle.load(f)
-            else:
-                if self.verbose: print(self.internal_name, "No data is available for loading...")
-        else:
-            if os.path.exists(self.path_dumps / (self.dump_name + ".pbz2") ):
-                with open(self.path_dumps / (self.dump_name + ".pbz2"), 'rb') as f: 
-                    data = bz2.BZ2File(f, 'rb'); self.data = pickle.load(data)
-            else:
-                if self.verbose: print(self.internal_name, "No data is available for loading...")
+        if not dump_name: 
+            dump_name = self.dump_name
+            if self.verbose: print(self.internal_name, self.path_dumps,  "loading...")
+        
+        self.data = self.compressor.load(path_dumps=self.path_dumps, dump_name=dump_name)
         return self.data
 
     def show(self, get_string = False) -> Any:
@@ -103,10 +118,10 @@ class Storer:
 
 if __name__ == "__main__":
     s = Storer(path_dumps=".")
-    s.put(what="string", name="mystring")
-    s.put(what=1, name="myint")
-    s.put(what=[i for i in range(10)],     name="myrange")
-    s.put(what={v:v*2 for v in range(10)}, name="mydict")
+    s.put(what="string", name="my_string")
+    s.put(what=1, name="my_int")
+    s.put(what=[i for i in range(10)],     name="my_range")
+    s.put(what={v:v*2 for v in range(10)}, name="my_dict")
     s.show()
     s.dump()
 
