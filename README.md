@@ -3,7 +3,7 @@
 - [1. Storer](#1-storer)
   - [1.1. Usage](#11-usage)
   - [1.2. Contribution](#12-contribution)
-  - [## License](#-license)
+  - [License](#-license)
 
 Minimalist storage class for any purpose. Created for internal needs. Feel free to use it and contribute (see [contribution section](#12-contribution)).
 
@@ -27,7 +27,7 @@ Easy to use.
 Few examples:
 
 ```
->>> from Storer import Storer
+>>> from storer import Storer
 >>> s = Storer()
 >>> s.put(what="string", name="my_string")
 >>> s.get(name="my_string")
@@ -36,7 +36,7 @@ Few examples:
 ```
 
 ```
->>> from Storer import Storer
+>>> from storer import Storer
 >>> s = Storer(path_dumps="~/my_folder_for_dumps", dump_name="dumps", verbose=True)
 [Storer v.0.9.0 [20]] is initialized!
 Dump folder: [/Users/alexander/my_folder_for_dumps]

@@ -1,15 +1,19 @@
 from distutils.core import setup
+from setuptools import find_packages
+
+
 setup(
-  name = 'Storer',
-  packages = ['Storer'],
-  version = '0.9.4',
-  license='MIT',
-  description = 'Minimalist storage class for any purpose.',
-  author = 'Alexander D. Kazakov',
+  name         = 'storer',
+  packages     = find_packages("src"),
+  package_dir  = {"": "src"},
+  version      = '0.9.5',
+  license      = 'MIT',
+  description  = 'Minimalist storage class for any purpose.',
+  author       = 'Alexander D. Kazakov',
   author_email = 'alexander.d.kazakov@gmail.com',
-  url = 'https://github.com/AlexanderDKazakov/Storer',
-  download_url = 'https://github.com/AlexanderDKazakov/Storer/archive/v0.9.4.tar.gz',
-  keywords = ['store', 'pickle'],
+  url          = 'https://github.com/AlexanderDKazakov/Storer',
+  download_url = 'https://github.com/AlexanderDKazakov/Storer/archive/v0.9.5.tar.gz',
+  keywords     = ['store', 'pickle'],
   install_requires=[
           '',
       ],

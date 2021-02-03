@@ -1,8 +1,8 @@
 import unittest
-
 import os
-from Storer import Storer
 import shutil
+
+from storer import Storer
 
 PATH_DUMPS        = "./data/"
 PATH_DUMPS_BACKUP = PATH_DUMPS + "backup/"
