@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from storer.storer import Storer
+from .storer import Storer
 
 from setuptools import setup, find_packages
 

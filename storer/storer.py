@@ -3,11 +3,11 @@ from pathlib import Path
 import os
 import shutil
 from typing import Any
-import compressor
+from storer.compressor import compressor
 
 @dataclass
 class Storer:
-    __version__ = "0.9.5 [27]"
+    __version__ = "1.0.3 [45]"
     internal_name:  str  = "[Storer]"
     dump_name:      str  = "noname"
     path_dumps:     str  = Path(os.path.expanduser(os.path.dirname(__file__)))
