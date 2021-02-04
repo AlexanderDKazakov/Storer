@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name         = 'storer',
-    version      = '1.0.3',
+    version      = '1.0.4',
     author       = 'Alexander D. Kazakov',
     author_email = 'alexander.d.kazakov@gmail.com',
     description  = 'Minimalist storage class for any purpose.',
@@ -29,7 +29,4 @@ setuptools.setup(
           '',
       ],
 )
-
-#  package_dir  = {"": "src"},
-#  download_url = 'https://github.com/AlexanderDKazakov/Storer/archive/v0.9.5.tar.gz',
 

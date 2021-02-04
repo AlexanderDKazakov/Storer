@@ -1,1 +1,2 @@
-from .tests import *
+# -*- coding: utf-8 -*-
+

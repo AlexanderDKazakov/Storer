@@ -7,7 +7,7 @@ from storer.compressor import compressor
 
 @dataclass
 class Storer:
-    __version__ = "1.0.3 [45]"
+    __version__ = "1.0.4 [48]"
     internal_name:  str  = "[Storer]"
     dump_name:      str  = "noname"
     path_dumps:     str  = Path(os.path.expanduser(os.path.dirname(__file__)))
@@ -71,8 +71,8 @@ class Storer:
         """
         if name in self.data: return self.data[name]
         for dump_name in self.backup_list:
-            self.load(dump_name=str(dump_name))
-            if name in self.data: return self.data[name]
+            data = self._load(dump_name=str(dump_name))
+            if name in data: return data[name]
         return False
 
     def dump(self:object, backup:bool = False) -> None:
@@ -81,8 +81,13 @@ class Storer:
                     
         if self.verbose: print(self.internal_name, self.path_dumps, self.dump_name, "dumping...")
         self.compressor.dump(path_dumps=path_dumps, dump_name=self.dump_name, data=self.data)
-        if not backup: self.data = dict()
+        if backup: self.data = dict()
 
+    def _load(self:object, dump_name:str = None) -> dict:
+        if not dump_name: dump_name = self.dump_name
+        data = self.compressor.load(path_dumps=self.path_dumps, dump_name=dump_name)
+        return data
+    
     def load(self:object, dump_name:str = None) -> None:
         
         if not dump_name: 
@@ -90,7 +95,6 @@ class Storer:
             if self.verbose: print(self.internal_name, self.path_dumps,  "loading...")
         
         self.data = self.compressor.load(path_dumps=self.path_dumps, dump_name=dump_name)
-        return self.data
 
     def show(self, get_string = False) -> Any:
         string = ""
