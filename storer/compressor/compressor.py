@@ -1,14 +1,16 @@
-from dataclasses import dataclass
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum
-import typing
 
 import pickle
 import bz2
 import lzma
 import gzip
 import io
+import time
+
+#from filelock import Timeout, FileLock
 
 
 class Algorithm(Enum):
@@ -25,34 +27,46 @@ _file_algorithm_mapper = {
 
 @dataclass
 class Compressor:
-    __version__ = "0.0.1 [1]"
+    __version__ = "0.0.3 [3]"
     compressed: bool = True
-    algorithm: Algorithm = Algorithm.bz2
+    algorithm : Algorithm = Algorithm.bz2
+    dump_path: str        = Path(os.path.expanduser(os.path.dirname(__file__)))
+    dump_name: str        = "noname"
+    #lock      : RWLock    = RWLock()
 
-    def _use(self:object, algorithm: Algorithm) -> None:
+    def _use(self, algorithm: Algorithm) -> None:
         self.algorithm = algorithm 
 
-    def dump(self:object, path_dumps:Path, dump_name:str, data:dict) -> None:
-        if not self.compressed: 
-            with open(path_dumps / (dump_name + ".pkl"), 'wb') as f: pickle.dump(data, f)
-        else:
-            with _file_algorithm_mapper[self.algorithm][0](
-                filename = path_dumps / (dump_name + _file_algorithm_mapper[self.algorithm][1]), 
-                mode     = "wb") as f: 
-                pickle.dump(data, f)
-
-
-    def load(self:object, path_dumps:Path, dump_name:str) -> dict:
+    def dump(self, dump_path:Path, dump_name:str, data:dict) -> None:
+        #self.lock = FileLock(self.dump_path / (self. dump_name + ".lock") )
+        #self.lock.acquire()
+        self.lock.acquire_write()
         if not self.compressed:
-            if os.path.exists(path_dumps / (dump_name + ".pkl") ):
-                with open(path_dumps / (dump_name + ".pkl"), 'rb') as f: data = pickle.load(f)
-            else:
-                data=dict()
+            path2file= dump_path / (dump_name + ".pkl")
+            with open(path2file, "wb") as f: pickle.dump(data, f)
         else:
-            if os.path.exists(path_dumps / (dump_name + _file_algorithm_mapper[self.algorithm][1]) ):
-                with open(path_dumps / (dump_name + _file_algorithm_mapper[self.algorithm][1]), 'rb') as f:
-                    data = _file_algorithm_mapper[self.algorithm][0](filename=f, mode='rb')
-                    data = pickle.load(data)
-            else:
-                data=dict()
+            path2file= dump_path / (dump_name + _file_algorithm_mapper[self.algorithm][1])
+            with _file_algorithm_mapper[self.algorithm][0](path2file, "wb") as f: 
+                pickle.dump(data, f)
+        #self.lock.release()
+        self.lock.release()
+
+    def load(self, dump_path:Path, dump_name:str) -> dict:
+        #self.lock = FileLock(self.dump_path / (self. dump_name + ".lock") )
+        #self.lock.acquire()
+        self.lock.acquire_read()
+        if not self.compressed:
+            path2file = dump_path / (dump_name + ".pkl") 
+            if os.path.exists(path2file): 
+                with open(path2file, "rb") as f: data = pickle.load(f)
+            else: data=dict()
+        else:
+            path2file = dump_path / (dump_name + _file_algorithm_mapper[self.algorithm][1]) 
+            if os.path.exists(path2file):
+                with open(path2file, "rb") as f:
+                        data = _file_algorithm_mapper[self.algorithm][0](filename=f, mode="rb")
+                        data = pickle.load(data)
+            else: data=dict()
+        #self.lock.release()
+        self.lock.release()
         return data
