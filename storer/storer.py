@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-import os
-import shutil
+import os, sys, shutil, signal, atexit
 from typing import Any
 from storer.compressor import compressor
 
 @dataclass
 class Storer:
-    __version__ = "1.0.5 [50]"
+    __version__ = "1.0.6 [55]"
     internal_name:  str  = "[Storer]"
     dump_name:      str  = "noname"
     dump_path:      str  = Path(os.path.expanduser(os.path.dirname(__file__)))
@@ -22,6 +21,7 @@ class Storer:
     _dump_counter:  int  = 0
     _dump_name:     str  = None
     _extension:     str  = None
+    _test:          bool = False
 
     def __post_init__(self):
         if self.verbose: print(f"[Storer v.{Storer.__version__ }] is initialized!")
@@ -34,10 +34,23 @@ class Storer:
         if self.verbose: print(f"Dump folder: [{self.dump_path}]")
         os.makedirs(self.dump_path, exist_ok=True)
         self._extension = ".pbz2" if self.compressed else ".pkl"
-        self.initialization()  # creating _backup_list
+        self._initialization()  # creating _backup_list
         self.compressor = compressor.Compressor(compressed = self.compressed, 
                                                 dump_path  = self.dump_path, 
                                                 dump_name  = self.dump_name)
+        if not self._test: atexit.register(self.dump)
+
+    def _exit(self, signum, frame):
+        self.dump()
+        sys.exit(0)
+    
+    def _cleanup(self) -> None:
+        """
+        Cleanup the dump_path directory fully: including all folders and files.
+        Assuming the folder is used only for Storer purposes.
+        """
+        if self.verbose: print(f"Cleaning...[{self.dump_path}]")
+        shutil.rmtree(self.dump_path)
 
     def _get_priv_dump_name(self) -> None:
         self.dump_name      = self._dump_name + "_" + str(self._dump_counter)
@@ -48,19 +61,27 @@ class Storer:
         self.dump_name      = self._dump_name + "_" + str(self._dump_counter)
         self._dump_counter += 1
 
-    def initialization(self) -> None:
-        """ Splitting project """
-        _backup_list = [p for p in self.dump_path.iterdir() if p.is_file()]
-        if self.verbose: print("[backups] Found: ")
+    def _initialization(self) -> None:
+        """
+        Internal needs.
+        """
+        signal.signal(signal.SIGINT, self._exit)
+        _backup_list = [p for p in self.dump_path.iterdir() if p.is_file() and str(p).endswith((".pkl", "gzip", "bz2", "lzma"))]
+        for path_fname in _backup_list: self.backup_list.append(str(path_fname.name).split(self._extension)[0])
 
-        for path_fname in _backup_list:
-            fname = str(path_fname.name).split(self._extension)[0]
-            if self.verbose: print("--> ", path_fname)
-            self.backup_list.append(fname)
+        if self.verbose: 
+            if len(self.backup_list):
+                print("[backups] Found: ")
+                for path_fname in self.backup_list: print("--> ", path_fname)
+            else: print(self.internal_name, "No data is available for loading...")
+        
         if len(self.backup_list) == 0: self.backup_list.append(self.dump_name)
         self.backup_list.sort()
 
     def put(self, what=None, name: str = None) -> None:
+        """
+        Put an element to internal field of data 
+        """
         self.data[name]   = what
         self._put_counter+=1
         if self._put_counter >= self.separations:
@@ -72,41 +93,38 @@ class Storer:
         """
         Get an item from dump[s]
         """
-        if name in self.data:
-            print("I found")
-            return self.data[name]
+        if name in self.data: return self.data[name]
         for dump_name in self.backup_list:
-            print(f"I am searching... {dump_name}")
             data = self._load(dump_name=str(dump_name))
-            if name in data:
-                print("I found in something...")
-                self.data = data
-                return data[name]
-        print("I didn't find..")
+            if name in data: self.data = data; return data[name]
         return False
 
     def dump(self, backup:bool = False, _next_dump_name:bool = False) -> None:
+        """
+        Create a dump.
+
+        Typical usage: dump()
+        """
         if backup: dump_path = self.dump_path / self._backup_dir
         else:      dump_path = self.dump_path
 
-        if self.verbose: print(self.internal_name, self.dump_path, self.dump_name, "dumping...")
-        self.compressor.dump(dump_path=dump_path, dump_name=self.dump_name, data=self.data)
-        if backup or _next_dump_name: self.data = dict()
+        if self.data:
+            if self.verbose: print(self.internal_name, self.dump_path, self.dump_name, "dumping...")
+            self.compressor.dump(dump_path=dump_path, dump_name=self.dump_name, data=self.data)
+            if backup or _next_dump_name: self.data = dict()
 
     def _load(self, dump_name:str = None) -> dict:
+        """
+        Internal needs.
+        """
         if not dump_name: dump_name = self.dump_name
         data = self.compressor.load(dump_path=self.dump_path, dump_name=dump_name)
         return data
 
-    def load(self, dump_name:str = None) -> None:
-
-        if not dump_name:
-            dump_name = self.dump_name
-            if self.verbose: print(self.internal_name, self.dump_path,  "loading...")
-
-        self.data = self.compressor.load(dump_path=self.dump_path, dump_name=dump_name)
-
     def show(self, get_string = False) -> Any:
+        """
+        The show method: will show what currently is in the internal data
+        """
         string = ""
         for name in self.data:
             string += "key: {0:10} | value:  {1:4}; ".format(name, str(self.data[name]))
@@ -120,27 +138,3 @@ class Storer:
         if self.verbose: print(f"Backup...")
         os.makedirs(self.dump_path / self._backup_dir, exist_ok=True)
         self.dump(backup=True)
-
-    def _cleanup(self) -> None:
-        """
-        Cleanup the dump_path directory fully: including all folders and files.
-        Assuming the folder is used only for Storer purposes.
-        """
-        if self.verbose: print(f"Cleaning...[{self.dump_path}]")
-        shutil.rmtree(self.dump_path)
-
-
-if __name__ == "__main__":
-    s = Storer(dump_path=".")
-    s.put(what="string", name="my_string")
-    s.put(what=1, name="my_int")
-    s.put(what=[i for i in range(10)],     name="my_range")
-    s.put(what={v:v*2 for v in range(10)}, name="my_dict")
-    s.show()
-    s.dump()
-
-    print("\n Now we creating new storer instance...\n")
-    s1 = Storer(dump_path=".", verbose=False)
-    s1.load()
-    s1.show()
-

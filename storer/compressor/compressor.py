@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
-from pathlib import Path
-from enum import Enum
+from pathlib     import Path
+from enum        import Enum
 
 import pickle
 import bz2
@@ -9,9 +9,6 @@ import lzma
 import gzip
 import io
 import time
-
-#from filelock import Timeout, FileLock
-
 
 class Algorithm(Enum):
     gzip = "gzip"
@@ -30,17 +27,13 @@ class Compressor:
     __version__ = "0.0.3 [3]"
     compressed: bool = True
     algorithm : Algorithm = Algorithm.bz2
-    dump_path: str        = Path(os.path.expanduser(os.path.dirname(__file__)))
-    dump_name: str        = "noname"
-    #lock      : RWLock    = RWLock()
+    dump_path : str        = Path(os.path.expanduser(os.path.dirname(__file__)))
+    dump_name : str        = "noname"
 
     def _use(self, algorithm: Algorithm) -> None:
         self.algorithm = algorithm 
 
     def dump(self, dump_path:Path, dump_name:str, data:dict) -> None:
-        #self.lock = FileLock(self.dump_path / (self. dump_name + ".lock") )
-        #self.lock.acquire()
-        self.lock.acquire_write()
         if not self.compressed:
             path2file= dump_path / (dump_name + ".pkl")
             with open(path2file, "wb") as f: pickle.dump(data, f)
@@ -48,13 +41,8 @@ class Compressor:
             path2file= dump_path / (dump_name + _file_algorithm_mapper[self.algorithm][1])
             with _file_algorithm_mapper[self.algorithm][0](path2file, "wb") as f: 
                 pickle.dump(data, f)
-        #self.lock.release()
-        self.lock.release()
 
     def load(self, dump_path:Path, dump_name:str) -> dict:
-        #self.lock = FileLock(self.dump_path / (self. dump_name + ".lock") )
-        #self.lock.acquire()
-        self.lock.acquire_read()
         if not self.compressed:
             path2file = dump_path / (dump_name + ".pkl") 
             if os.path.exists(path2file): 
@@ -67,6 +55,4 @@ class Compressor:
                         data = _file_algorithm_mapper[self.algorithm][0](filename=f, mode="rb")
                         data = pickle.load(data)
             else: data=dict()
-        #self.lock.release()
-        self.lock.release()
         return data
