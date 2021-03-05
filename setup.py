@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name         = 'storer',
-    version      = '1.0.6',
+    version      = '1.0.7',
     author       = 'Alexander D. Kazakov',
     author_email = 'alexander.d.kazakov@gmail.com',
     description  = 'Minimalist storage class for any purpose.',

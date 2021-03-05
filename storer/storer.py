@@ -1,12 +1,12 @@
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses       import dataclass, field
+from pathlib           import Path
+from typing            import Any
 import os, sys, shutil, signal, atexit
-from typing import Any
 from storer.compressor import compressor
 
 @dataclass
 class Storer:
-    __version__ = "1.0.6 [55]"
+    __version__ = "1.0.7 [57]"
     internal_name:  str  = "[Storer]"
     dump_name:      str  = "noname"
     dump_path:      str  = Path(os.path.expanduser(os.path.dirname(__file__)))
@@ -24,7 +24,7 @@ class Storer:
     _test:          bool = False
 
     def __post_init__(self):
-        if self.verbose: print(f"[Storer v.{Storer.__version__ }] is initialized!")
+        if self.verbose: print(f"[Storer v.{self.__version__ }] is initialized!")
         self._dump_name = self.dump_name
         if self.dump_path == Path(os.path.expanduser(os.path.dirname(__file__))) or self.dump_path == "." :
             self.dump_path = Path(os.path.expanduser(os.path.dirname(__file__))) / "data"
@@ -35,15 +35,15 @@ class Storer:
         os.makedirs(self.dump_path, exist_ok=True)
         self._extension = ".pbz2" if self.compressed else ".pkl"
         self._initialization()  # creating _backup_list
-        self.compressor = compressor.Compressor(compressed = self.compressed, 
-                                                dump_path  = self.dump_path, 
+        self.compressor = compressor.Compressor(compressed = self.compressed,
+                                                dump_path  = self.dump_path,
                                                 dump_name  = self.dump_name)
         if not self._test: atexit.register(self.dump)
 
     def _exit(self, signum, frame):
         self.dump()
         sys.exit(0)
-    
+
     def _cleanup(self) -> None:
         """
         Cleanup the dump_path directory fully: including all folders and files.
@@ -69,18 +69,18 @@ class Storer:
         _backup_list = [p for p in self.dump_path.iterdir() if p.is_file() and str(p).endswith((".pkl", "gzip", "bz2", "lzma"))]
         for path_fname in _backup_list: self.backup_list.append(str(path_fname.name).split(self._extension)[0])
 
-        if self.verbose: 
+        if self.verbose:
             if len(self.backup_list):
-                print("[backups] Found: ")
-                for path_fname in self.backup_list: print("--> ", path_fname)
-            else: print(self.internal_name, "No data is available for loading...")
-        
+                print(f"{self.internal_name} [BACKUPS] Found: ")
+                for path_fname in self.backup_list: print(f"    --> {path_fname}")
+            else: print(f"{self.internal_name} No data is available for loading...")
+
         if len(self.backup_list) == 0: self.backup_list.append(self.dump_name)
         self.backup_list.sort()
 
     def put(self, what=None, name: str = None) -> None:
         """
-        Put an element to internal field of data 
+        Put an element to internal field of data
         """
         self.data[name]   = what
         self._put_counter+=1
@@ -109,7 +109,7 @@ class Storer:
         else:      dump_path = self.dump_path
 
         if self.data:
-            if self.verbose: print(self.internal_name, self.dump_path, self.dump_name, "dumping...")
+            if self.verbose: print(f"{self.internal_name} Path:{self.dump_path} Name:{self.dump_name} dumping...")
             self.compressor.dump(dump_path=dump_path, dump_name=self.dump_name, data=self.data)
             if backup or _next_dump_name: self.data = dict()
 
