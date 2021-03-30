@@ -51,7 +51,7 @@ However you can use just `put` methods and Storer will dump your data automatica
 ```python
 >>> from storer import Storer
 >>> s = Storer(dump_path="~/my_folder_for_dumps", dump_name="dumps", verbose=True)
-[Storer v.1.0.6 [55]] is initialized!
+[Storer v.X.Y.Z [XYZ]] is initialized!
 Dump folder: [~/my_folder_for_dumps]
 [Storer] No data is available for loading...
 >>> s.put(what=[i for i in range(10)], name="my_range")
