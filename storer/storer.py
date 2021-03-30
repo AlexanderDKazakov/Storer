@@ -6,11 +6,12 @@ from storer.compressor import compressor
 
 @dataclass
 class Storer:
-    __version__ = "1.0.7 [57]"
+    __version__ = "1.0.8 [58]"
     internal_name:  str  = "[Storer]"
     dump_name:      str  = "noname"
     dump_path:      str  = Path(os.path.expanduser(os.path.dirname(__file__)))
     verbose:        bool = False
+    exit_dump:      bool = True
     data:           dict = field(default_factory=dict)
     default_dir:    str  = "data"
     compressed:     bool = True
@@ -21,7 +22,6 @@ class Storer:
     _dump_counter:  int  = 0
     _dump_name:     str  = None
     _extension:     str  = None
-    _test:          bool = False
 
     def __post_init__(self):
         if self.verbose: print(f"[Storer v.{self.__version__ }] is initialized!")
@@ -38,10 +38,10 @@ class Storer:
         self.compressor = compressor.Compressor(compressed = self.compressed,
                                                 dump_path  = self.dump_path,
                                                 dump_name  = self.dump_name)
-        if not self._test: atexit.register(self.dump)
+        if self.exit_dump: atexit.register(self.dump)
 
     def _exit(self, signum, frame):
-        self.dump()
+        if self.exit_dump: self.dump()
         sys.exit(0)
 
     def _cleanup(self) -> None:
@@ -138,3 +138,4 @@ class Storer:
         if self.verbose: print(f"Backup...")
         os.makedirs(self.dump_path / self._backup_dir, exist_ok=True)
         self.dump(backup=True)
+

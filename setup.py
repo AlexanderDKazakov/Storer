@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name         = 'storer',
-    version      = '1.0.7',
+    version      = '1.0.8',
     author       = 'Alexander D. Kazakov',
     author_email = 'alexander.d.kazakov@gmail.com',
     description  = 'Minimalist storage class for any purpose.',
@@ -24,7 +24,7 @@ setuptools.setup(
       'Programming Language :: Python :: 3.8',
       'Programming Language :: Python :: 3.9',
       ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=[
           '',
       ],
